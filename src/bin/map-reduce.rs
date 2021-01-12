@@ -1,6 +1,7 @@
 #![feature(with_options)]
+#![feature(binary_heap_into_iter_sorted)]
 
-use log::info;
+use log::{info, warn};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
@@ -38,62 +39,64 @@ fn main() -> Result<()> {
     println!("{:#?}", &opt);
     let (file, nmaps) = (opt.file, opt.nmaps);
 
-    let file = File::open(file)?;
-    let reader = BufReader::new(file);
-
     // let mut cnt = HashMap::new();
 
     let dir = tempfile::TempDir::new().unwrap();
     let intermediate_path = move |i| dir.path().join(format!("mr-{}", i));
+    let mut paths = Vec::new();
+    for i in 0..nmaps {
+        paths.push(intermediate_path(i));
+    }
+
+    println!("paths: {:?}", paths);
 
     let mut nentries = 0;
     {
-        let mut writer = BatchWriter::new(10000000);
+        let mut writer = BatchWriter::new(10000000, paths.clone());
+        let mut reader = BufReader::new(File::open(file)?);
+        let mut buf = vec![];
 
         // Map phase.
-        for line in reader.lines() {
-            let key = line?;
+        while reader.read_until(b'\n', &mut buf)? > 0 {
             nentries += 1;
 
             let mut hasher = DefaultHasher::new();
-            key.hash(&mut hasher);
+            buf.hash(&mut hasher);
             let i = hasher.finish() % nmaps;
-            let p = intermediate_path(i);
-
-            // let mut f = File::with_options()
-            //     .create(true)
-            //     .write(true)
-            //     .append(true)
-            //     .open(p)?;
-            // f.write(key.as_bytes())?;
-            // f.write("\n".as_bytes())?;
-            writer.write(&p, &(key + "\n"));
+            let last = buf.last().expect("buffer should not be empty");
+            if last != &b'\n' {
+                buf.push(b'\n');
+            } else {
+                warn!("not end with newline");
+            }
+            writer.write(i as usize, &mut buf);
+            assert_eq!(buf.len(), 0);
         }
     }
     println!("number of entries: {}", nentries);
 
-    let mut heap: BinaryHeap<(i32, String)> = BinaryHeap::new();
+    let mut heap: BinaryHeap<(i32, Vec<u8>)> = BinaryHeap::new();
     let maxk = 10;
 
     // Reduce phase.
-    for i in 0..nmaps {
-        let p = intermediate_path(i);
+    for p in paths {
         let mut cnt = HashMap::new();
         if let Ok(file) = File::open(&p) {
             println!("file {:?} of size {:?}", p, file.metadata().unwrap().len());
-            let reader = BufReader::new(file);
-            for line in reader.lines() {
-                let key = line?;
-                if let Some(v) = cnt.get_mut(&key) {
+            let mut reader = BufReader::new(file);
+            let mut buf = vec![];
+            while reader.read_until(b'\n', &mut buf)? > 0 {
+                if let Some(v) = cnt.get_mut(&buf) {
                     *v += 1;
                 } else {
-                    cnt.insert(key, 1);
+                    cnt.insert(buf.clone(), 1);
                 }
+                buf.clear();
             }
         }
 
         for (k, v) in cnt {
-            heap.push((-v, k.to_owned()));
+            heap.push((-v, k));
 
             // FIXME: same count?
             if heap.len() > maxk {
@@ -102,6 +105,11 @@ fn main() -> Result<()> {
         }
     }
 
-    println!("{:#?}", heap.into_sorted_vec());
+
+    let mut result = Vec::new();
+    for (neg_cnt, buf) in heap.into_iter_sorted() {
+        result.push((String::from_utf8(buf)?, -neg_cnt));
+    }
+    println!("{:#?}", result);
     Ok(())
 }
