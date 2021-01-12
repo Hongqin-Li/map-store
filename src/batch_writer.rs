@@ -40,12 +40,64 @@ impl BatchWriter {
         }
         self.cache_len = 0;
         self.cache.clear();
-        println!("flush")
+        println!("flush");
     }
 }
 
 impl Drop for BatchWriter {
     fn drop(&mut self) {
         self.flush();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
+
+    use crate::BatchWriter;
+
+    #[test]
+    fn test_flush() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let p1 = dir.path().join("1");
+        let p2 = dir.path().join("2");
+
+        let mut writer = BatchWriter::new(10);
+        let content1 = String::from("1234567890");
+        let content2 = String::from("abcdefg");
+
+        writer.write(&p1, &content1);
+        assert!(File::open(&p1).is_err());
+        writer.write(&p2, &content2);
+
+        let mut s1 = String::new();
+        let mut s2 = String::new();
+        File::open(&p1).unwrap().read_to_string(&mut s1).unwrap();
+        File::open(&p2).unwrap().read_to_string(&mut s2).unwrap();
+
+        assert_eq!(s1, content1);
+        assert_eq!(s2, content2);
+    }
+
+    #[test]
+    fn test_drop() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let p1 = dir.path().join("1");
+        let content1 = String::from("1234567890");
+
+        {
+            let mut writer = BatchWriter::new(10);
+
+            writer.write(&p1, &content1);
+            assert!(File::open(&p1).is_err());
+        }
+
+        let mut s1 = String::new();
+        File::open(&p1).unwrap().read_to_string(&mut s1).unwrap();
+
+        assert_eq!(s1, content1);
     }
 }
