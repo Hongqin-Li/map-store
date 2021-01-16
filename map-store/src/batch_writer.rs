@@ -1,21 +1,35 @@
 use anyhow::Result;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
+/// Writing to disk in batch by caching in memory for efficiency.
 #[derive(Default)]
 pub struct BatchWriter {
     max_cache_len: usize,
     cache_len: usize,
-    path: Vec<PathBuf>,
+    file: Vec<File>,
     cache: Vec<Vec<u8>>,
 }
 
 impl BatchWriter {
+    /// Create a new [BatchWriter] with maximum cache size in memory and
+    /// paths to write to.
     pub fn new(max_cache_len: usize, path: Vec<PathBuf>) -> Self {
         let cache = vec![vec![]; path.len()];
-        debug_assert!(cache.len() == path.len());
+        let mut file = vec![];
+        for p in path {
+            file.push(
+                File::with_options()
+                    .create(true)
+                    .write(true)
+                    .append(true)
+                    .open(p)
+                    .unwrap(),
+            );
+        }
+        debug_assert!(cache.len() == file.len());
         Self {
             max_cache_len,
-            path,
+            file,
             cache,
             cache_len: 0,
         }
@@ -33,21 +47,17 @@ impl BatchWriter {
         }
     }
 
+    /// Flush all in-memory cache to disk.
     pub fn flush(&mut self) {
         for (path_id, buf) in self.cache.iter().enumerate() {
-            let mut f = File::with_options()
-                .create(true)
-                .write(true)
-                .append(true)
-                .open(&self.path[path_id])
-                .unwrap();
+            let f = &mut self.file[path_id];
             f.write(buf.as_slice()).unwrap();
         }
         self.cache_len = 0;
         for s in self.cache.iter_mut() {
             s.clear();
         }
-        println!("flush");
+        // println!("flush");
     }
 }
 
@@ -77,7 +87,10 @@ mod tests {
         let content2 = vec![0, 1, 2, 3];
 
         writer.write(0, &mut (content1.clone()));
-        assert!(File::open(&p1).is_err());
+        if let Ok(mut f) = File::open(&p1) {
+            let mut buf = vec![];
+            assert_eq!(f.read(&mut buf).unwrap(), 0);
+        }
         writer.write(1, &mut (content2.clone()));
 
         let mut s1 = vec![];
@@ -101,7 +114,10 @@ mod tests {
             let mut writer = BatchWriter::new(10, paths);
 
             writer.write(0, &mut (content1.as_bytes().to_vec()));
-            assert!(File::open(&p1).is_err());
+            if let Ok(mut f) = File::open(&p1) {
+                let mut buf = vec![];
+                assert_eq!(f.read(&mut buf).unwrap(), 0);
+            }
         }
 
         let mut s1 = String::new();
