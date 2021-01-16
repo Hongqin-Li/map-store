@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BatchWriter","Writing to disk in batch by caching in memory for efficiency."],["MapStore","MapReduce-based key-value storage."]],"trait":[["Operator","Trait representing certain operation to be applied on `MapStore`."]]});
