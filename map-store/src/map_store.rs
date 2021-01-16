@@ -41,7 +41,7 @@ where
     ///
     /// ```
     /// use tempfile::TempDir;
-    /// use mapstore::{MapStore, Operator};
+    /// use map_store::{MapStore, Operator};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Serialize, Deserialize)]
@@ -85,7 +85,7 @@ where
     ///
     /// ```
     /// use tempfile::TempDir;
-    /// use mapstore::{MapStore, Operator};
+    /// use map_store::{MapStore, Operator};
     /// use serde::{Deserialize, Serialize};
     ///
     /// let dir = TempDir::new().unwrap();
