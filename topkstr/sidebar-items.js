@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Generator",""]],"trait":[["Solution",""]]});
+initSidebarItems({"enum":[["Generator",""]],"struct":[["BruteForce",""],["MapReduce",""],["MapStore",""]],"trait":[["Solution",""]]});

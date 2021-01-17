@@ -864,7 +864,7 @@
         }
     }
 
-    <span class="doccomment">/// Get the key-value Mapping in one map region without any doing any compactions.</span>
+    <span class="doccomment">/// Get the key-value mapping in one map region without any doing any compactions.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This function will first flush any cached operations on this region to disk.</span>
     <span class="doccomment">/// Then read the persisted key-value map to memory from kv file.</span>
@@ -896,7 +896,7 @@
 
             <span class="comment">// Remove the operations map file by atomic rename.</span>
             <span class="comment">// Update term to support fault-tolerance.</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">KvIter</span>::<span class="ident">entry</span>(<span class="string">&quot;term&quot;</span>, <span class="ident">term</span>.<span class="ident">to_ne_bytes</span>());
+            <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">KvIter</span>::<span class="ident">entry</span>(<span class="string">&quot;term&quot;</span>, <span class="ident">term</span>.<span class="ident">to_ne_bytes</span>());
             <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">map_path</span>.<span class="ident">get</span>(<span class="ident">idx</span>).<span class="ident">unwrap</span>();
             <span class="self">self</span>.<span class="ident">atomic_write</span>(<span class="ident">path</span>, <span class="ident">data</span>)
                 .<span class="ident">expect</span>(<span class="string">&quot;failed to write map file&quot;</span>);
@@ -971,6 +971,8 @@
 <span class="kw">struct</span> <span class="ident">KvIter</span> {
     <span class="ident">file_sz</span>: <span class="ident">i64</span>,
     <span class="ident">reader</span>: <span class="ident">BufReader</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span>,
+    <span class="ident">data_buf</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    <span class="ident">size_buf</span>: [<span class="ident">u8</span>; <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>() <span class="op">*</span> <span class="number">2</span>],
 }
 
 <span class="kw">impl</span> <span class="ident">KvIter</span> {
@@ -978,7 +980,12 @@
         <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">path</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">file_sz</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">metadata</span>().<span class="ident">unwrap</span>().<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">i64</span>;
         <span class="kw">let</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">with_capacity</span>(<span class="number">1000000</span>, <span class="ident">f</span>);
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> { <span class="ident">file_sz</span>, <span class="ident">reader</span> })
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
+            <span class="ident">file_sz</span>,
+            <span class="ident">reader</span>,
+            <span class="ident">data_buf</span>: <span class="ident">Vec</span>::<span class="ident">new</span>(),
+            <span class="ident">size_buf</span>: [<span class="number">0</span>; <span class="number">16</span>],
+        })
     }
 
     <span class="kw">fn</span> <span class="ident">entry</span>(<span class="ident">key</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Debug</span>, <span class="ident">value</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Debug</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
@@ -1041,42 +1048,35 @@
 
 <span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">KvIter</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>);
+
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">file_sz</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="prelude-val">None</span>;
         }
-        <span class="kw">const</span> <span class="ident">z</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>();
+        <span class="kw">const</span> <span class="ident">Z</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">mem</span>::<span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>();
 
-        <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">z</span> <span class="op">=</span><span class="op">=</span> <span class="number">8</span>);
+        <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">Z</span> <span class="op">=</span><span class="op">=</span> <span class="number">8</span>);
         <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="self">self</span>.<span class="ident">file_sz</span> <span class="op">&gt;</span> <span class="number">0</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="ident">z</span>];
         <span class="self">self</span>.<span class="ident">reader</span>
-            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;failed to read key size&quot;</span>);
+            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">size_buf</span>)
+            .<span class="ident">expect</span>(<span class="string">&quot;failed to read key/value size&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">key_sz</span> <span class="op">=</span> <span class="ident">u64</span>::<span class="ident">from_ne_bytes</span>(<span class="ident">buf</span>);
+        <span class="kw">let</span> <span class="ident">key_sz</span> <span class="op">=</span> <span class="ident">u64</span>::<span class="ident">from_ne_bytes</span>(<span class="self">self</span>.<span class="ident">size_buf</span>[<span class="number">0</span>..<span class="ident">Z</span>].<span class="ident">try_into</span>().<span class="ident">unwrap</span>()) <span class="kw">as</span> <span class="ident">usize</span>;
+        <span class="kw">let</span> <span class="ident">value_sz</span> <span class="op">=</span> <span class="ident">u64</span>::<span class="ident">from_ne_bytes</span>(<span class="self">self</span>.<span class="ident">size_buf</span>[<span class="ident">Z</span>..].<span class="ident">try_into</span>().<span class="ident">unwrap</span>()) <span class="kw">as</span> <span class="ident">usize</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> [<span class="number">0</span>; <span class="ident">z</span>];
+        <span class="self">self</span>.<span class="ident">data_buf</span>.<span class="ident">resize</span>((<span class="ident">key_sz</span> <span class="op">+</span> <span class="ident">value_sz</span>) <span class="kw">as</span> <span class="ident">usize</span>, <span class="number">0</span>);
+
         <span class="self">self</span>.<span class="ident">reader</span>
-            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;failed to read value size&quot;</span>);
-        <span class="kw">let</span> <span class="ident">value_sz</span> <span class="op">=</span> <span class="ident">u64</span>::<span class="ident">from_ne_bytes</span>(<span class="ident">buf</span>);
+            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">data_buf</span>)
+            .<span class="ident">expect</span>(<span class="string">&quot;failed to read key and value&quot;</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="number">0</span>; <span class="ident">key_sz</span> <span class="kw">as</span> <span class="ident">usize</span>];
-        <span class="self">self</span>.<span class="ident">reader</span>
-            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;failed to read key&quot;</span>);
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">buf</span>;
-
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="number">0</span>; <span class="ident">value_sz</span> <span class="kw">as</span> <span class="ident">usize</span>];
-        <span class="self">self</span>.<span class="ident">reader</span>
-            .<span class="ident">read_exact</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;failed to read value&quot;</span>);
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">buf</span>;
-
-        <span class="self">self</span>.<span class="ident">file_sz</span> <span class="op">-</span><span class="op">=</span> ((<span class="ident">z</span> <span class="kw">as</span> <span class="ident">u64</span>) <span class="op">*</span> <span class="number">2</span> <span class="op">+</span> <span class="ident">key_sz</span> <span class="op">+</span> <span class="ident">value_sz</span>) <span class="kw">as</span> <span class="ident">i64</span>;
-        <span class="prelude-val">Some</span>((<span class="ident">key</span>, <span class="ident">value</span>))
+        <span class="self">self</span>.<span class="ident">file_sz</span> <span class="op">-</span><span class="op">=</span> (<span class="number">16</span> <span class="op">+</span> <span class="ident">key_sz</span> <span class="op">+</span> <span class="ident">value_sz</span>) <span class="kw">as</span> <span class="ident">i64</span>;
+        <span class="prelude-val">Some</span>((
+            <span class="self">self</span>.<span class="ident">data_buf</span>[<span class="number">0</span>..<span class="ident">key_sz</span>].<span class="ident">to_vec</span>(),
+            <span class="self">self</span>.<span class="ident">data_buf</span>[<span class="ident">key_sz</span>..].<span class="ident">to_vec</span>(),
+        ))
     }
 }
 
@@ -1141,7 +1141,7 @@
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">should_panic</span>(<span class="ident">expected</span> <span class="op">=</span> <span class="string">&quot;failed to read key size&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">should_panic</span>(<span class="ident">expected</span> <span class="op">=</span> <span class="string">&quot;failed to read key/value size&quot;</span>)]</span>
     <span class="kw">fn</span> <span class="ident">test_kviter_failed</span>() {
         <span class="kw">let</span> <span class="ident">dir</span> <span class="op">=</span> <span class="ident">TempDir</span>::<span class="ident">new</span>().<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="ident">dir</span>.<span class="ident">path</span>().<span class="ident">join</span>(<span class="string">&quot;tmp&quot;</span>);
