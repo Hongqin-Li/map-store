@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::trace;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
 /// Writing to disk in batch by caching in memory for efficiency.
@@ -47,17 +48,24 @@ impl BatchWriter {
         }
     }
 
+    /// Flush cache in one file to disk.
+    pub fn flush1(&mut self, path_id: usize) {
+        let f = &mut self.file[path_id];
+        let buf = &mut self.cache[path_id];
+        self.cache_len -= buf.len();
+        trace!("flush to {}: buf {:?}", path_id, buf);
+
+        f.write(buf.as_slice()).unwrap();
+        buf.clear();
+    }
+
     /// Flush all in-memory cache to disk.
     pub fn flush(&mut self) {
-        for (path_id, buf) in self.cache.iter().enumerate() {
-            let f = &mut self.file[path_id];
-            f.write(buf.as_slice()).unwrap();
+        let n = self.cache.len();
+        for i in 0..n {
+            self.flush1(i);
         }
-        self.cache_len = 0;
-        for s in self.cache.iter_mut() {
-            s.clear();
-        }
-        // println!("flush");
+        debug_assert_eq!(self.cache_len, 0);
     }
 }
 

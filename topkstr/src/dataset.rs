@@ -39,7 +39,7 @@ pub enum Generator {
 }
 
 impl Generator {
-    /// Generate dataset of `size` GB.
+    /// Generate dataset of `size` MB.
     pub fn generate(&self, size: u64, path: impl AsRef<Path>) {
         let mut f = File::with_options()
             .write(true)
@@ -50,14 +50,14 @@ impl Generator {
 
         let len = 50;
         let mut sz = 0;
-        let gb = 2u64.pow(30);
+        let mb = 2u64.pow(20);
         {
-            let pareto = Pareto::new((size * gb) as f64 / 1000.0, 2.0).unwrap();
+            let pareto = Pareto::new((size * mb) as f64, 3.0).unwrap();
             let mut rng = thread_rng();
 
             let paths = vec![PathBuf::from(path.as_ref())];
             let mut writer = BatchWriter::new(10000000, paths);
-            while sz / gb < size {
+            while sz / mb < size {
                 let mut s = match self {
                     Self::Distinct => rand_u8(),
                     Self::Normal => {
@@ -72,6 +72,29 @@ impl Generator {
             }
         }
 
-        println!("{:#?} GB", (sz as f64) / (gb as f64));
+        println!("{:#?} GB", (sz as f64) / (mb as f64) / 1024.);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use statrs::assert_almost_eq;
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn test_generated_size() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("tmp");
+
+        let g = Generator::Normal {};
+        g.generate(3, &path);
+        assert!(path.exists());
+        assert_almost_eq!(
+            path.metadata().unwrap().len() as f64 / 1024. / 1024.,
+            3.,
+            1.
+        );
     }
 }

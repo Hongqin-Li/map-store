@@ -1,4 +1,4 @@
-use std::{collections::hash_map::Iter, io::prelude::*, iter, path::Path};
+use std::{collections::hash_map::Iter, fmt::Debug, io::prelude::*, iter, path::Path};
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -11,7 +11,9 @@ use std::{
 
 use anyhow::Result;
 use bincode::Serializer;
+use log::{debug, trace};
 use serde::{de::DeserializeOwned, Serialize};
+use tempfile::{tempdir, tempfile};
 
 use crate::{batch_writer, operator::Operator, BatchWriter};
 
@@ -28,7 +30,7 @@ pub struct MapStore<V, O> {
 
 impl<V, O> MapStore<V, O>
 where
-    V: Serialize + DeserializeOwned + Default,
+    V: Serialize + DeserializeOwned + Default + Debug,
     O: Serialize + DeserializeOwned + Operator<V>,
 {
     // TODO: options: in-memory-cache/persistent, dynamically change nmaps.
@@ -103,38 +105,57 @@ where
     /// }
     /// let set1 = SetOp { value: 1 };
     /// store.apply("key", &set1);
+    /// assert_eq!(store.get("key").unwrap(), set1.value);
     /// ```
     ///
-    pub fn apply(&mut self, key: impl AsRef<[u8]>, op: &O) {
-        let i = seahash::hash(key.as_ref()) % self.nmaps;
+    pub fn apply(&mut self, key: impl AsRef<[u8]> + Debug, op: &O) {
+        let i = self.hash1(&key);
+
+        trace!("apply on hash {}", i);
 
         let value = bincode::serialize(op).expect("failed to serialize operation");
         let mut data = KvIter::entry(key, value);
 
-        self.writer.write(i as usize, &mut data);
+        self.writer.write(i, &mut data);
     }
 
-    /// Iterate over key-value pair in one map region.
-    pub fn iter1(&self, idx: usize) -> impl Iterator<Item = (Vec<u8>, V)> {
-        let idx = 0;
+    fn hash1(&self, key: impl AsRef<[u8]>) -> usize {
+        (seahash::hash(key.as_ref()) % self.nmaps) as usize
+    }
+    fn temp_path(&self) -> PathBuf {
+        self.dir.join("tmp")
+    }
+
+    /// Get the key-value map in one map region without any doing any compactions.
+    ///
+    /// Return a pair of map and updated, indicating if any operations are applied.
+    /// This function will first flush any cached operations on this region to disk.
+    /// Then read the persisted key-value map to memory from kv file.
+    /// Finally, loop through all operations on this region and apply them to associated key-value pair.
+    ///
+    /// Without compaction means that we won't remove the operation log file and won't modify kv file
+    /// after operating on the in-memory key-value map.
+    pub fn map1_without_compact(&mut self, idx: usize) -> (HashMap<Vec<u8>, V>, bool) {
         let mut map: HashMap<Vec<u8>, V> = HashMap::default();
 
         // Read key-value storage.
         let kv_path = self.kv_path.get(idx).expect("id out of bound");
         if let Ok(it) = KvIter::new(kv_path) {
             for (k, v) in it {
-                map.insert(
-                    bincode::deserialize(&k).unwrap(),
-                    bincode::deserialize(&v).unwrap(),
-                );
+                map.insert(k, bincode::deserialize(&v).unwrap());
             }
         }
 
+        // Flush the cached operations to disk first.
+        self.writer.flush1(idx);
+
         // Patch operations.
         let map_path = self.map_path.get(idx).expect("id out of bound");
+        debug!("cached op file content: {:?}", fs::read(&map_path));
         if let Ok(it) = KvIter::new(map_path) {
             for (k, v) in it {
                 let op: O = bincode::deserialize(v.as_ref()).unwrap();
+                trace!("op to patch on key {:?}: {:?}", String::from_utf8(k.clone()), v);
                 if let Some(value) = map.get_mut(&k) {
                     op.apply(value);
                 } else {
@@ -143,12 +164,52 @@ where
                     map.insert(k, x);
                 }
             }
+            trace!("patched map: {:?}", map);
+            (map, true)
+        } else {
+            trace!("unchanged map: {:?}", map);
+            (map, false)
         }
-        map.into_iter()
+    }
+
+    /// Get the key-value Mapping in one map region without any doing any compactions.
+    ///
+    /// This function will first flush any cached operations on this region to disk.
+    /// Then read the persisted key-value map to memory from kv file.
+    /// Finally, loop through all operations on this region and apply them to associated key-value pair.
+    ///
+    /// Compared to [map1_without_compaction], it will remove the operation log file and
+    /// updating the kv file atomically.
+    pub fn map1(&mut self, idx: usize) -> HashMap<Vec<u8>, V> {
+        let (map, changed) = self.map1_without_compact(idx);
+
+        // FIXME: This is slow when called frequently.
+        if changed {
+            let path = self.kv_path.get(idx).unwrap();
+            let tmp_path = self.temp_path();
+
+            trace!("patch kv old: {:?}, tmp: {:?}", path, tmp_path);
+
+            let mut data = vec![];
+            for (k, v) in map.iter() {
+                data.append(&mut KvIter::entry(
+                    k,
+                    bincode::serialize(v).expect("failed to serialize value"),
+                ));
+            }
+            fs::write(&tmp_path, data).unwrap();
+            fs::rename(tmp_path, path).expect("failed to replace with updated kv file");
+        }
+        map
+    }
+
+    /// Iterate over key-value pair in one map region.
+    pub fn iter1(&mut self, idx: usize) -> impl Iterator<Item = (Vec<u8>, V)> {
+        self.map1(idx).into_iter()
     }
 
     /// Iterator over all key-value pairs.
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (Vec<u8>, V)> + 'a {
+    pub fn iter<'a>(&'a mut self) -> impl Iterator<Item = (Vec<u8>, V)> + 'a {
         let mut idx = 0;
         let max_idx = self.map_path.len();
         let mut it = self.iter1(0);
@@ -165,27 +226,54 @@ where
             }
         })
     }
+    
+    /// Iterate over key-value pair in one map region.
+    fn iter1_without_compaction(&mut self, idx: usize) -> impl Iterator<Item = (Vec<u8>, V)> {
+        let (map, changed) = self.map1_without_compact(idx);
+        map.into_iter()
+    }
+
+    /// Iterator over all key-value pairs without compaction on operation logs.
+    pub fn iter_without_compaction<'a>(&'a mut self) -> impl Iterator<Item = (Vec<u8>, V)> + 'a {
+        let mut idx = 0;
+        let max_idx = self.map_path.len();
+        let mut it = self.iter1_without_compaction(0);
+        iter::from_fn(move || loop {
+            let result = it.next();
+            if result.is_none() {
+                idx += 1;
+                if idx >= max_idx {
+                    break None;
+                }
+                it = self.iter1_without_compaction(idx);
+            } else {
+                break result;
+            }
+        })
+    }
 
     /// Retrieve the value associated with specified key.
-    pub fn get(key: &[u8]) -> Result<Option<V>> {
-        todo!();
+    pub fn get(&mut self, key: impl AsRef<[u8]>) -> Option<V> {
+        let i = self.hash1(&key);
+        let mut map = self.map1(i);
+        map.remove(key.as_ref()) // Modification on `map` won't affect on-disk data.
     }
 }
 
 /// Iterate on a file consisting of `[key_size, value_size, key, value]` entries.
 struct KvIter {
-    file_sz: u64,
+    file_sz: i64,
     reader: BufReader<File>,
 }
 
 impl KvIter {
     fn new(path: impl AsRef<Path>) -> Result<Self> {
         let f = File::open(path)?;
-        let file_sz = f.metadata().unwrap().len();
+        let file_sz = f.metadata().unwrap().len() as i64;
         let reader = BufReader::with_capacity(1000000, f);
         Ok(Self { file_sz, reader })
     }
-    fn entry(key: impl AsRef<[u8]>, value: impl AsRef<[u8]>) -> Vec<u8> {
+    fn entry(key: impl AsRef<[u8]> + Debug, value: impl AsRef<[u8]> + Debug) -> Vec<u8> {
         let key_sz = key.as_ref().len() as u64;
         let value_sz = value.as_ref().len() as u64;
 
@@ -199,9 +287,13 @@ impl KvIter {
 impl Iterator for KvIter {
     type Item = (Vec<u8>, Vec<u8>);
     fn next(&mut self) -> Option<Self::Item> {
-        let mut sz = self.file_sz;
+        if self.file_sz == 0 {
+            return None;
+        }
         const z: usize = mem::size_of::<u64>();
+
         debug_assert!(z == 8);
+        debug_assert!(self.file_sz > 0);
 
         let mut buf = [0; z];
         self.reader
@@ -228,17 +320,15 @@ impl Iterator for KvIter {
             .expect("failed to read value");
         let value = buf;
 
-        sz -= (z as u64) * 2 + key_sz + value_sz;
-        if sz == 0 {
-            None
-        } else {
-            Some((key, value))
-        }
+        self.file_sz -= ((z as u64) * 2 + key_sz + value_sz) as i64;   
+        Some((key, value))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use rand::Rng;
+    use serde::{Deserialize, Serialize};
     use tempfile::TempDir;
 
     use super::*;
@@ -250,16 +340,21 @@ mod tests {
 
         let kvs = vec![(b"key1", b"value1"), (b"key2", b"value2")];
 
+        let mut data = vec![];
         for (key, value) in kvs.iter() {
-            fs::write(&p, KvIter::entry(key, value)).expect("failed to write file");
+            data.append(&mut KvIter::entry(key, value));
         }
+        fs::write(&p, data).unwrap();
 
         let it = KvIter::new(p).expect("failed to create iter");
 
+        let mut nkvs = kvs.len();
         for ((k1, v1), (k2, v2)) in it.zip(kvs) {
             assert_eq!(&k1, k2);
             assert_eq!(&v1, v2);
+            nkvs -= 1;
         }
+        assert_eq!(nkvs, 0);
     }
 
     #[test]
@@ -280,6 +375,47 @@ mod tests {
         for ((k1, v1), (k2, v2)) in it.zip(kvs) {
             assert_eq!(&k1, k2);
             assert_eq!(&v1, v2);
+        }
+    }
+
+    #[test]
+    fn test_apply() {
+        // pretty_env_logger::try_init();
+        let dir = TempDir::new().unwrap();
+        let mut store = MapStore::new(5, dir.path());
+
+        #[derive(Serialize, Deserialize)]
+        enum Op {
+            Add(i32),
+        }
+
+        impl Operator<i32> for Op {
+            fn apply(&self, value: &mut i32) {
+                match self {
+                    Op::Add(x) => {
+                        *value += x;
+                    }
+                }
+            }
+        }
+
+        let mut rng = rand::thread_rng();
+
+        let mut ans = HashMap::new();
+        
+        for i in 0..10 {
+            let key = vec![rng.gen()];
+            let dx = rng.gen::<i32>() % 100;
+            if let Some(x) = ans.get_mut(&key) {
+                *x += dx;
+            } else {
+                ans.insert(key.clone(), dx);
+            }
+            store.apply(&key, &Op::Add(dx))
+        }
+
+        for (k, v) in store.iter() {
+            assert_eq!(&v, ans.get(&k).unwrap());
         }
     }
 }

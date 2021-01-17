@@ -12,10 +12,10 @@ use std::{
 
 use anyhow::Result;
 
-use map_store::{BatchWriter};
+use map_store::BatchWriter;
 
-use crate::Solution;
 use crate::mink_set::MinkSet;
+use crate::Solution;
 
 struct MapReduce {
     pub nmaps: u32,
@@ -106,11 +106,25 @@ impl Solution for MapReduce {
 
 #[cfg(test)]
 mod test {
+    use serde_json::Map;
+    use tempfile::tempdir;
 
+    use crate::{brute_force::BruteForce, Generator, Solution};
+
+    use super::MapReduce;
 
     #[test]
     fn test_map_reduce() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("tmp");
 
+        let g = Generator::Normal {};
+        g.generate(1, &path);
 
+        let solver = BruteForce {};
+        let ans1 = solver.solve(10, &path);
+        let solver = MapReduce { nmaps: 10 };
+        let ans2 = solver.solve(10, &path);
+        assert_eq!(ans1, ans2);
     }
 }

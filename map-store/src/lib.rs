@@ -3,7 +3,6 @@
 #![feature(with_options)]
 //! MapReduce-based key-value storage.
 
-
 mod batch_writer;
 mod map_store;
 mod operator;
