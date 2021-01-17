@@ -13,7 +13,7 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use map_store::{BatchWriter, MapStore, Operator};
+use map_store::{BatchWriter, Operator};
 
 use crate::mink_set::MinkSet;
 use crate::Solution;
@@ -27,15 +27,15 @@ impl Operator<i32> for Increment1 {
     }
 }
 
-struct MapStoreSolution {
+pub struct MapStore {
     pub nmaps: u32,
 }
 
-impl Solution for MapStoreSolution {
+impl Solution for MapStore {
     fn solve(&self, topk: u32, path: impl AsRef<Path>) -> HashMap<String, u32> {
         let dir = tempfile::TempDir::new().unwrap();
 
-        let mut store = MapStore::new(500, dir.path());
+        let mut store = map_store::MapStore::new(self.nmaps as u64, dir.path());
         let inc1 = Increment1 {};
 
         let mut reader = BufReader::new(File::open(path).expect("failed to open input file"));
@@ -53,7 +53,7 @@ impl Solution for MapStoreSolution {
         }
 
         let mut set = MinkSet::new(topk as usize);
-        for (k, v) in store.iter() {
+        for (k, v) in store.iter_without_compaction() {
             set.insert((-v, k))
         }
 
@@ -75,7 +75,7 @@ mod test {
 
     use crate::{brute_force::BruteForce, Generator, Solution};
 
-    use super::MapStoreSolution;
+    use super::MapStore;
 
     #[test]
     fn test_map_store() {
@@ -87,8 +87,22 @@ mod test {
 
         let solver = BruteForce {};
         let ans1 = solver.solve(10, &path);
-        let solver = MapStoreSolution { nmaps: 10 };
+        let solver = MapStore { nmaps: 10 };
         let ans2 = solver.solve(10, &path);
         assert_eq!(ans1, ans2);
+    }
+
+    #[bench]
+    fn bench_map_store(b: &mut test::Bencher) {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("tmp");
+
+        let g = Generator::Normal {};
+        g.generate(10, &path);
+
+        b.iter(|| {
+            let solver = MapStore { nmaps: 10 };
+            let ans = solver.solve(10, &path);
+        });
     }
 }

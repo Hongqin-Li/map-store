@@ -17,7 +17,7 @@ use map_store::BatchWriter;
 use crate::mink_set::MinkSet;
 use crate::Solution;
 
-struct MapReduce {
+pub struct MapReduce {
     pub nmaps: u32,
 }
 
@@ -58,7 +58,7 @@ impl Solution for MapReduce {
                     warn!("not end with newline");
                 }
                 writer.write(i as usize, &mut buf);
-                assert_eq!(buf.len(), 0);
+                debug_assert_eq!(buf.len(), 0);
             }
         }
         println!("number of entries: {}", nentries);
@@ -105,7 +105,7 @@ impl Solution for MapReduce {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use serde_json::Map;
     use tempfile::tempdir;
 
@@ -126,5 +126,19 @@ mod test {
         let solver = MapReduce { nmaps: 10 };
         let ans2 = solver.solve(10, &path);
         assert_eq!(ans1, ans2);
+    }
+
+    #[bench]
+    fn bench_map_reduce(b: &mut test::Bencher) {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("tmp");
+
+        let g = Generator::Normal {};
+        g.generate(10, &path);
+
+        b.iter(|| {
+            let solver = MapReduce { nmaps: 10 };
+            let ans = solver.solve(10, &path);
+        });
     }
 }

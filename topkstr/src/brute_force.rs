@@ -47,6 +47,8 @@ mod tests {
 
     use tempfile::tempdir;
 
+    use crate::Generator;
+
     use super::*;
 
     #[test]
@@ -63,5 +65,19 @@ mod tests {
         assert_eq!(x.get("3").unwrap(), &3);
         assert_eq!(x.get("2").unwrap(), &2);
         assert_eq!(x.get("2x").unwrap(), &2);
+    }
+
+    #[bench]
+    fn bench_brute_force(b: &mut test::Bencher) {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("tmp");
+
+        let g = Generator::Normal {};
+        g.generate(10, &path);
+
+        b.iter(|| {
+            let solver = BruteForce {};
+            let ans = solver.solve(10, &path);
+        });
     }
 }

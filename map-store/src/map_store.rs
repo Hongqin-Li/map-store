@@ -254,7 +254,7 @@ where
         }
     }
 
-    /// Get the key-value Mapping in one map region without any doing any compactions.
+    /// Get the key-value mapping in one map region without any doing any compactions.
     ///
     /// This function will first flush any cached operations on this region to disk.
     /// Then read the persisted key-value map to memory from kv file.
@@ -286,7 +286,7 @@ where
 
             // Remove the operations map file by atomic rename.
             // Update term to support fault-tolerance.
-            let mut data = KvIter::entry("term", term.to_ne_bytes());
+            let data = KvIter::entry("term", term.to_ne_bytes());
             let path = self.map_path.get(idx).unwrap();
             self.atomic_write(path, data)
                 .expect("failed to write map file");
@@ -361,6 +361,8 @@ impl<V, O> Drop for MapStore<V, O> {
 struct KvIter {
     file_sz: i64,
     reader: BufReader<File>,
+    data_buf: Vec<u8>,
+    size_buf: [u8; mem::size_of::<u64>() * 2],
 }
 
 impl KvIter {
@@ -368,7 +370,12 @@ impl KvIter {
         let f = File::open(path)?;
         let file_sz = f.metadata().unwrap().len() as i64;
         let reader = BufReader::with_capacity(1000000, f);
-        Ok(Self { file_sz, reader })
+        Ok(Self {
+            file_sz,
+            reader,
+            data_buf: Vec::new(),
+            size_buf: [0; 16],
+        })
     }
 
     fn entry(key: impl AsRef<[u8]> + Debug, value: impl AsRef<[u8]> + Debug) -> Vec<u8> {
@@ -431,42 +438,35 @@ impl KvIter {
 
 impl Iterator for KvIter {
     type Item = (Vec<u8>, Vec<u8>);
+
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.file_sz == 0 {
             return None;
         }
-        const z: usize = mem::size_of::<u64>();
+        const Z: usize = mem::size_of::<u64>();
 
-        debug_assert!(z == 8);
+        debug_assert!(Z == 8);
         debug_assert!(self.file_sz > 0);
 
-        let mut buf = [0; z];
         self.reader
-            .read_exact(&mut buf)
-            .expect("failed to read key size");
+            .read_exact(&mut self.size_buf)
+            .expect("failed to read key/value size");
 
-        let key_sz = u64::from_ne_bytes(buf);
+        let key_sz = u64::from_ne_bytes(self.size_buf[0..Z].try_into().unwrap()) as usize;
+        let value_sz = u64::from_ne_bytes(self.size_buf[Z..].try_into().unwrap()) as usize;
 
-        let mut buf = [0; z];
+        self.data_buf.resize((key_sz + value_sz) as usize, 0);
+
         self.reader
-            .read_exact(&mut buf)
-            .expect("failed to read value size");
-        let value_sz = u64::from_ne_bytes(buf);
+            .read_exact(&mut self.data_buf)
+            .expect("failed to read key and value");
 
-        let mut buf = vec![0; key_sz as usize];
-        self.reader
-            .read_exact(&mut buf)
-            .expect("failed to read key");
-        let key = buf;
-
-        let mut buf = vec![0; value_sz as usize];
-        self.reader
-            .read_exact(&mut buf)
-            .expect("failed to read value");
-        let value = buf;
-
-        self.file_sz -= ((z as u64) * 2 + key_sz + value_sz) as i64;
-        Some((key, value))
+        self.file_sz -= (16 + key_sz + value_sz) as i64;
+        Some((
+            self.data_buf[0..key_sz].to_vec(),
+            self.data_buf[key_sz..].to_vec(),
+        ))
     }
 }
 
@@ -531,7 +531,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "failed to read key size")]
+    #[should_panic(expected = "failed to read key/value size")]
     fn test_kviter_failed() {
         let dir = TempDir::new().unwrap();
         let p = dir.path().join("tmp");
