@@ -9,7 +9,7 @@ arg_enum! {
     enum Mode {
         Distinct,
         Identical,
-        Noraml,
+        Normal,
     }
 }
 /// A basic example
@@ -20,7 +20,7 @@ struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     output: PathBuf,
 
-    /// Size of samples to generate in GB.
+    /// Size of samples to generate in MB.
     #[structopt(short, long)]
     size: u64,
     /// Mode of sample distribution.
@@ -35,9 +35,9 @@ fn main() {
     println!("{:#?}", &opt);
 
     let g = match opt.mode {
-        Mode::Noraml => Generator::Normal {},
+        Mode::Normal => Generator::Normal {},
         Mode::Distinct => Generator::Distinct {},
         Mode::Identical => Generator::Identical {},
     };
-    g.generate(opt.size * 1024, opt.output);
+    g.generate(opt.size, opt.output);
 }
