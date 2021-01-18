@@ -580,8 +580,8 @@ mod tests {
 
             let mut rng = rand::thread_rng();
 
-            for i in 0..10 {
-                let key = vec![rng.gen()];
+            for i in 0..1000 {
+                let key: Vec<u8> = vec![rng.gen::<u8>() % 10]; // Only 10 keys.
                 let dx = rng.gen::<i32>() % 100;
                 if let Some(x) = ans.get_mut(&key) {
                     *x += dx;
