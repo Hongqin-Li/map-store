@@ -3,16 +3,14 @@ use std::collections::BinaryHeap;
 /// Data structure to maintain k smallest elements in a set.
 pub struct MinkSet<T> {
     k: usize,
-    max_value: T,
     heap: BinaryHeap<T>,
 }
 
-impl<T: Ord + Default + Clone> MinkSet<T> {
+impl<T: Ord> MinkSet<T> {
     /// Create a [MinkSet] to maintain k smallest elements in it.
     pub fn new(k: usize) -> Self {
         Self {
             k,
-            max_value: T::default(),
             heap: BinaryHeap::default(),
         }
     }

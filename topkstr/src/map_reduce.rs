@@ -18,6 +18,27 @@ use crate::mink_set::MinkSet;
 use crate::Solution;
 
 /// MapReduce method with `M = nmaps`.
+///
+/// # Examples
+///
+/// ```
+/// use std::fs;
+/// use tempfile::tempdir;
+/// use topkstr::{MapReduce, Solution};
+///
+/// let dir = tempdir().unwrap();
+/// let path = dir.path().join("tmp");
+/// let strs = vec!["3", "3", "3", "2", "2", "2x", "2x", "a", "b", "c"];
+///
+/// fs::write(&path, strs.join("\n")).expect("failed to write to file");
+/// let solver = MapReduce { nmaps: 10 };
+/// let ans = solver.solve(3, &path);
+///
+/// assert_eq!(ans.len(), 3);
+/// assert_eq!(ans.get("3").unwrap().clone(), 3);
+/// assert_eq!(ans.get("2").unwrap().clone(), 2);
+/// assert_eq!(ans.get("2x").unwrap().clone(), 2);
+/// ```
 pub struct MapReduce {
     /// Number of splits on keys.
     pub nmaps: u32,

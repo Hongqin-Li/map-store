@@ -2,11 +2,10 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use topkstr::{BruteForce, Solution};
 
-/// A basic example
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
 struct Opt {
-    /// Files to process
+    /// File to process.
     #[structopt(name = "FILE", parse(from_os_str))]
     file: PathBuf,
 

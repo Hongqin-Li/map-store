@@ -1,3 +1,12 @@
+#![deny(missing_docs)]
+//! Dataset genertor.
+//!
+//! # Example
+//!
+//! To generate 10MB distinct samples to `./tmp`, run
+//! `cargo run --release --bin data-generator -- distinct -o ./tmp --size 10`
+//!
+
 use std::path::PathBuf;
 
 use structopt::{clap::arg_enum, StructOpt};
@@ -12,7 +21,6 @@ arg_enum! {
         Normal,
     }
 }
-/// A basic example
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
 struct Opt {

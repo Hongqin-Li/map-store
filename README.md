@@ -13,39 +13,8 @@
 <br/><br/>
 
 
-- [ ] MapStore doc and test
-- [ ] Report markdown
-- [ ] Github CI and documentation.
-
-
-## Solution
-
-- [x] (Tested) Solution 1: brute-force Hash table + heap
-
-- [x] Solution 2: MapReduce
-
-- [ ] Solution 3: MapStore
-
-## Optimization
-
-Optimize according to [Flamegraph](https://github.com/flamegraph-rs/flamegraph).
-
-### Rust IO
-
-avoid duplicated open and close.
-avoid utf-8 string, use `vec<u8>` instead
-
-### Batch Append and Read Buffer
-
-
-### I/O and CPU Thread
-
-
-## Dataset
-
-[Url Dataset](https://www.kaggle.com/teseract/urldataset)
-
-1. Normal(1GB): 
-2. Distinct(1GB): 20,000,000 distinct strings with length 50.
-3. Identical(1GB): 
+- [x] Github CI and documentation.
+- [x] MapStore fault tolerant.
+- [x] MapStore doc and test.
+- [ ] MapStore non-volatile option.
 

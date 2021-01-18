@@ -42,10 +42,6 @@ These two interesting observations implies the strong connection between MapRedu
 
 
 
-TODO: KV Store Graph.
-
-
-
 ## About Worse Case
 
 The worse case occurs when all strings(keys) are hashed to the same bucket, causing OOM. I haven't come up with a perfect solution for the worse case but we can randomized the seed of hash function to avoid it in practice.
@@ -54,7 +50,7 @@ The worse case occurs when all strings(keys) are hashed to the same bucket, caus
 
 ## Benchmark
 
-To measure the performance, I try the three approaches on three kinds of dataset. For simplicity, every string in the datasets contains 50 chars. Also, I use [timeout](https://github.com/pshved/timeout) to limit the memory usage of my programs according to the problem.
+To measure the performance, I try the three approaches on three kinds of dataset. For simplicity, every string in the datasets contains 50 chars. Also, I use [timeout](https://github.com/pshved/timeout) to limit the memory usage of my programs according to the problem. And to test it quickly, I reduce the problem size by 10, i.e. 10 GB with 100MB memory bound.
 
 - Normal: Strings are sampled by the [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution)
 - Distinct: All strings are different.
@@ -66,7 +62,7 @@ Distinct:
 | ------------ | ---------------- | -------------- | ------------- |
 | 100MB        | 2.01             | 1.01           | 1.15          |
 | 1GB          | 26.74            | 15.44          | 15.45         |
-| 10GB         | -                | 206.07         | 238.15        |
+| 10GB         | OOM              | 206.07         | 238.15        |
 
 Normal:
 
@@ -74,9 +70,9 @@ Normal:
 | ------------ | ---------------- | -------------- | ------------- |
 | 100MB        | 2.10             | 0.86           | 1.16          |
 | 1GB          | 14.26            | 8.62           | 10.23         |
-| 10GB         | -                | 193.82         | 231.33        |
+| 10GB         | OOM              | 193.82         | 231.33        |
 
-Indentical is trivial since it represents only I/O times. As expected, MapReduce is two times slower than brute-force since it has to write to log first. And MapStore is about 1.25 times slower than pure MapReduce.
+Identical:
 
 | Dataset size | Brute-force(sec) | MapReduce(sec) | MapStore(sec) |
 | ------------ | ---------------- | -------------- | ------------- |
@@ -84,7 +80,4 @@ Indentical is trivial since it represents only I/O times. As expected, MapReduce
 | 1GB          | 2.24             | 3.72           | 5.70          |
 | 10GB         | 25.48            | 49.73          | 73.51         |
 
-
-
-TODO: normal distribution graph.
-
+Indentical is trivial since it represents only I/O times. As expected, MapReduce is two times slower than brute-force since it has additional map phase. And MapStore is about 1.25 times slower than pure MapReduce.

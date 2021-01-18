@@ -72,7 +72,6 @@ impl Solution for MapStore {
 
 #[cfg(test)]
 mod test {
-    use serde_json::Map;
     use tempfile::tempdir;
 
     use crate::{brute_force::BruteForce, Generator, Solution};

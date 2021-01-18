@@ -45,7 +45,7 @@ pub enum Generator {
 impl Generator {
     /// Generate dataset of `size` MB.
     pub fn generate(&self, size: u64, path: impl AsRef<Path>) {
-        let mut f = File::with_options()
+        let f = File::with_options()
             .write(true)
             .truncate(true)
             .create(true)
