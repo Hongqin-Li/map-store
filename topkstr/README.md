@@ -12,7 +12,7 @@ It can be generalized to "Top K Frequent String", on which I have tried the foll
 2. MapReduce: works pretty well with M=500 and R=1(M and R are parameters specified in the [paper](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf).) 
 3. KV store based on MapReduce, slightly slower than Map Reduce by a small constant factor but more powerful and general.
 
-The brute-force method is just keeping track of frequencies of each string using an in-memory hash table and then maintaining top k large elements in a heap. The following sessions will start with my optimizations on the implementation and then further my thoughts about the relationship between MapReduce and key-value storage, which illustrate my way to the third solution. 
+The brute-force method is just keeping track of frequencies of each string using an in-memory hash table and maintaining top k large elements in a heap. The following sessions will start with my optimizations on the implementation and then further my thoughts about the relationship between MapReduce and key-value storage, which illustrate my way to the third solution. 
 
 
 
@@ -38,7 +38,7 @@ If we think of the problem more carefully, we may notice that we are just **appl
 
 What about MapReduce? It first scans through input files and emits some key-value pairs to corresponding files. It's quite similar to say **it handles client requests and append them to log**. Well, the reduce process is same as doing log compaction. Notice that the key idea of MapReduce is to divide keys into different parts so that each part is small enough to be loaded into memory. This means to use different logs and key-value storage file to handles requests on different keys. Therefore, MapReduce is basically a cluster of special KV store.
 
-These two interesting observations implies the strong connection between MapReduce and KV Store. More importantly, after combining those two, we can obtain a general model than allows arbitrary operations on values by key on large-scale datasets. Thus, I invented MapStore, a toy KV store based on MapReduce supporting customized operations on key-value pairs.
+These two interesting observations implies the strong connection between MapReduce and KV Store. More importantly, after combining those two, we can obtain a general model that allows arbitrary operations on values by key on large-scale datasets. Thus, I invented MapStore, a toy KV store based on MapReduce supporting customized operations on key-value pairs.
 
 
 
@@ -80,4 +80,4 @@ Identical:
 | 1GB          | 2.24             | 3.72           | 5.70          |
 | 10GB         | 25.48            | 49.73          | 73.51         |
 
-Indentical is trivial since it represents only I/O times. As expected, MapReduce is two times slower than brute-force since it has additional map phase. And MapStore is about 1.25 times slower than pure MapReduce.
+Indentical is trivial since it represents only I/O times. As expected, MapReduce is two times slower than brute-force since it has additional map phase. And MapStore has some additional overheads that make it about 1.25 times slower than pure MapReduce. 
