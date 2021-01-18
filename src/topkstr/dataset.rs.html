@@ -101,6 +101,10 @@
 <span id="98"> 98</span>
 <span id="99"> 99</span>
 <span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">rand</span>::<span class="ident">distributions</span>::<span class="ident">Alphanumeric</span>;
 <span class="kw">use</span> <span class="ident">rand</span>::<span class="ident">distributions</span>::<span class="ident">Distribution</span>;
@@ -136,9 +140,13 @@
     <span class="ident">s</span>
 }
 
+<span class="doccomment">/// Dataset generator.</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Generator</span> {
+    <span class="doccomment">/// All strings are different.</span>
     <span class="ident">Distinct</span>,
+    <span class="doccomment">/// Distribution of strings follows [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution)</span>
     <span class="ident">Normal</span>,
+    <span class="doccomment">/// All strings are same.</span>
     <span class="ident">Identical</span>,
 }
 

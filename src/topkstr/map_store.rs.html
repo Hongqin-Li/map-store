@@ -109,6 +109,8 @@
 <span id="106">106</span>
 <span id="107">107</span>
 <span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">info</span>, <span class="ident">warn</span>};
 
@@ -139,7 +141,9 @@
     }
 }
 
+<span class="doccomment">/// MapStore method based on MapReduce with `M = nmaps`.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapStore</span> {
+    <span class="doccomment">/// Number of splits on keys.</span>
     <span class="kw">pub</span> <span class="ident">nmaps</span>: <span class="ident">u32</span>,
 }
 

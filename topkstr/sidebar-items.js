@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Generator",""]],"struct":[["BruteForce",""],["MapReduce",""],["MapStore",""]],"trait":[["Solution",""]]});
+initSidebarItems({"enum":[["Generator","Dataset generator."]],"struct":[["BruteForce","Brute-force method by hash table and heap."],["MapReduce","MapReduce method with `M = nmaps`."],["MapStore","MapStore method based on MapReduce with `M = nmaps`."]],"trait":[["Solution","A trait of solutions."]]});

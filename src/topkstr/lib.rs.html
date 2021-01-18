@@ -21,9 +21,20 @@
 <span id="18">18</span>
 <span id="19">19</span>
 <span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="attribute">#![<span class="ident">deny</span>(<span class="ident">missing_docs</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">with_options</span>)]</span>
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">test</span>)]</span>
+<span class="doccomment">//! Solutions for top K frequent string.</span>
+
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">test</span>;
 
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections</span>::<span class="ident">HashMap</span>, <span class="ident">path</span>::<span class="ident">Path</span>};
@@ -39,7 +50,12 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">dataset</span>::<span class="ident">Generator</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">map_reduce</span>::<span class="ident">MapReduce</span>;
 
+<span class="doccomment">/// A trait of solutions.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Solution</span> {
+    <span class="doccomment">/// Solve a top k frequent string problem with k of `topk` and path to a input file.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The file contains lines of strings. This function should return a `HashMap` of size</span>
+    <span class="doccomment">/// smaller than `topk`, mapping from top-k strings to their frequency.</span>
     <span class="kw">fn</span> <span class="ident">solve</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">topk</span>: <span class="ident">u32</span>, <span class="ident">path</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">u32</span><span class="op">&gt;</span>;
 }
 </pre></div>
