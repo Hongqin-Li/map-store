@@ -17,6 +17,7 @@ pub use crate::map_store::MapStore;
 pub use brute_force::BruteForce;
 pub use dataset::Generator;
 pub use map_reduce::MapReduce;
+pub use mink_set::MinkSet;
 
 /// A trait of solutions.
 pub trait Solution {

@@ -50,7 +50,7 @@ The worse case occurs when all strings(keys) are hashed to the same bucket, caus
 
 ## Benchmark
 
-To measure the performance, I try the three approaches on three kinds of dataset. For simplicity, every string in the datasets contains 50 chars. Also, I use [timeout](https://github.com/pshved/timeout) to limit the memory usage of my programs according to the problem. And to test it quickly, I reduce the problem size by 10, i.e. 10 GB with 100MB memory bound.
+To measure the performance, I try the three approaches on three kinds of dataset. For simplicity, every string in the datasets contains 50 chars. Also, I use [timeout](https://github.com/pshved/timeout) to limit the memory usage of my programs according to the problem. And to test it quickly, I reduce the problem size by 10, i.e. 10 GB with 100MB memory bound. Scripts can be found at `../scripts/run.sh`.
 
 - Normal: Strings are sampled by the [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution)
 - Distinct: All strings are different.

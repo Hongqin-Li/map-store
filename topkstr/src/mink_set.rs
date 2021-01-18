@@ -8,6 +8,13 @@ pub struct MinkSet<T> {
 
 impl<T: Ord> MinkSet<T> {
     /// Create a [MinkSet] to maintain k smallest elements in it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use topkstr::MinkSet;
+    /// let set: MinkSet<u32> = MinkSet::new(3);
+    /// ```
     pub fn new(k: usize) -> Self {
         Self {
             k,
@@ -16,6 +23,18 @@ impl<T: Ord> MinkSet<T> {
     }
 
     /// Insert an element with value x in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use topkstr::MinkSet;
+    /// let mut set = MinkSet::new(3);
+    /// for i in 0..100 {
+    ///     set.insert(i);
+    /// }
+    /// let vec = set.into_sorted_vec();
+    /// assert_eq!(vec, [0, 1, 2]);
+    /// ```
     pub fn insert(&mut self, x: T) {
         if self.heap.len() < self.k {
             self.heap.push(x);
@@ -37,16 +56,5 @@ impl<T: Ord> MinkSet<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::MinkSet;
-
-    #[test]
-    fn test1() {
-        let mut set = MinkSet::new(3);
-
-        for i in 0..100 {
-            set.insert(i);
-        }
-        let vec = set.into_sorted_vec();
-        assert_eq!(vec, [0, 1, 2]);
-    }
+    // Tested in doc.
 }
