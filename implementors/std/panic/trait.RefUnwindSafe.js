@@ -1,7 +1,8 @@
 (function() {var implementors = {};
-implementors["brute_force"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["data_generator"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for Mode","synthetic":true,"types":[]}];
-implementors["map_reduce"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["map_store"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["topkstr"] = [{"text":"impl RefUnwindSafe for MapStore","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for BruteForce","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for MapReduce","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for Generator","synthetic":true,"types":[]}];
+implementors["bruteforce"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["data"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for Mode","synthetic":true,"types":[]}];
+implementors["map_store"] = [{"text":"impl&lt;V, O&gt; RefUnwindSafe for MapStore&lt;V, O&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;O: RefUnwindSafe,<br>&nbsp;&nbsp;&nbsp;&nbsp;V: RefUnwindSafe,&nbsp;</span>","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for BatchWriter","synthetic":true,"types":[]}];
+implementors["mapreduce"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["mapstore"] = [{"text":"impl RefUnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["topkstr"] = [{"text":"impl RefUnwindSafe for MapStore","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for BruteForce","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for MapReduce","synthetic":true,"types":[]},{"text":"impl&lt;T&gt; RefUnwindSafe for MinkSet&lt;T&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;T: RefUnwindSafe,&nbsp;</span>","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for Generator","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

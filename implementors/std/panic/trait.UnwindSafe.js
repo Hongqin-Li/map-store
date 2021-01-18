@@ -1,7 +1,8 @@
 (function() {var implementors = {};
-implementors["brute_force"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["data_generator"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]},{"text":"impl UnwindSafe for Mode","synthetic":true,"types":[]}];
-implementors["map_reduce"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["map_store"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
-implementors["topkstr"] = [{"text":"impl UnwindSafe for MapStore","synthetic":true,"types":[]},{"text":"impl UnwindSafe for BruteForce","synthetic":true,"types":[]},{"text":"impl UnwindSafe for MapReduce","synthetic":true,"types":[]},{"text":"impl UnwindSafe for Generator","synthetic":true,"types":[]}];
+implementors["bruteforce"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["data"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]},{"text":"impl UnwindSafe for Mode","synthetic":true,"types":[]}];
+implementors["map_store"] = [{"text":"impl&lt;V, O&gt; UnwindSafe for MapStore&lt;V, O&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;O: UnwindSafe,<br>&nbsp;&nbsp;&nbsp;&nbsp;V: UnwindSafe,&nbsp;</span>","synthetic":true,"types":[]},{"text":"impl UnwindSafe for BatchWriter","synthetic":true,"types":[]}];
+implementors["mapreduce"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["mapstore"] = [{"text":"impl UnwindSafe for Opt","synthetic":true,"types":[]}];
+implementors["topkstr"] = [{"text":"impl UnwindSafe for MapStore","synthetic":true,"types":[]},{"text":"impl UnwindSafe for BruteForce","synthetic":true,"types":[]},{"text":"impl UnwindSafe for MapReduce","synthetic":true,"types":[]},{"text":"impl&lt;T&gt; UnwindSafe for MinkSet&lt;T&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;T: UnwindSafe,&nbsp;</span>","synthetic":true,"types":[]},{"text":"impl UnwindSafe for Generator","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
