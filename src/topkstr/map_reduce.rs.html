@@ -147,6 +147,27 @@
 <span id="144">144</span>
 <span id="145">145</span>
 <span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">info</span>, <span class="ident">warn</span>};
 
@@ -168,6 +189,27 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">Solution</span>;
 
 <span class="doccomment">/// MapReduce method with `M = nmaps`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Examples</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use std::fs;</span>
+<span class="doccomment">/// use tempfile::tempdir;</span>
+<span class="doccomment">/// use topkstr::{MapReduce, Solution};</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// let dir = tempdir().unwrap();</span>
+<span class="doccomment">/// let path = dir.path().join(&quot;tmp&quot;);</span>
+<span class="doccomment">/// let strs = vec![&quot;3&quot;, &quot;3&quot;, &quot;3&quot;, &quot;2&quot;, &quot;2&quot;, &quot;2x&quot;, &quot;2x&quot;, &quot;a&quot;, &quot;b&quot;, &quot;c&quot;];</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// fs::write(&amp;path, strs.join(&quot;\n&quot;)).expect(&quot;failed to write to file&quot;);</span>
+<span class="doccomment">/// let solver = MapReduce { nmaps: 10 };</span>
+<span class="doccomment">/// let ans = solver.solve(3, &amp;path);</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// assert_eq!(ans.len(), 3);</span>
+<span class="doccomment">/// assert_eq!(ans.get(&quot;3&quot;).unwrap().clone(), 3);</span>
+<span class="doccomment">/// assert_eq!(ans.get(&quot;2&quot;).unwrap().clone(), 2);</span>
+<span class="doccomment">/// assert_eq!(ans.get(&quot;2x&quot;).unwrap().clone(), 2);</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MapReduce</span> {
     <span class="doccomment">/// Number of splits on keys.</span>
     <span class="kw">pub</span> <span class="ident">nmaps</span>: <span class="ident">u32</span>,

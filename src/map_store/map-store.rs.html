@@ -34,7 +34,6 @@
 <span id="31">31</span>
 <span id="32">32</span>
 <span id="33">33</span>
-<span id="34">34</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">path</span>::<span class="ident">PathBuf</span>;
 
@@ -42,11 +41,10 @@
 
 <span class="kw">use</span> <span class="ident">topkstr</span>::{<span class="ident">MapReduce</span>, <span class="ident">MapStore</span>, <span class="ident">Solution</span>};
 
-<span class="doccomment">/// A basic example</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">StructOpt</span>, <span class="ident">Debug</span>)]</span>
 <span class="attribute">#[<span class="ident">structopt</span>(<span class="ident">name</span> <span class="op">=</span> <span class="string">&quot;basic&quot;</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Opt</span> {
-    <span class="doccomment">/// Files to process</span>
+    <span class="doccomment">/// File to process.</span>
     <span class="attribute">#[<span class="ident">structopt</span>(<span class="ident">name</span> <span class="op">=</span> <span class="string">&quot;FILE&quot;</span>, <span class="ident">parse</span>(<span class="ident">from_os_str</span>))]</span>
     <span class="ident">file</span>: <span class="ident">PathBuf</span>,
 

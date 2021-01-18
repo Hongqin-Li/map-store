@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["main",""]],"struct":[["Opt","A basic example"]]});
+initSidebarItems({"fn":[["main",""]],"struct":[["Opt",""]]});

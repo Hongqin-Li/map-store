@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Mode",""]],"fn":[["main",""]],"struct":[["Opt","A basic example"]]});
+initSidebarItems({"enum":[["Mode",""]],"fn":[["main",""]],"struct":[["Opt",""]]});
