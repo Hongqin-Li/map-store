@@ -60,8 +60,6 @@ To measure the performance, I try the three approaches on three kinds of dataset
 - Distinct: All strings are different.
 - Identical: All strings are same.
 
-
-
 Distinct:
 
 | Dataset size | Brute-force(sec) | MapReduce(sec) | MapStore(sec) |
@@ -78,7 +76,7 @@ Normal:
 | 1GB          | 14.26            | 8.62           | 10.23         |
 | 10GB         | -                | 193.82         | 231.33        |
 
-Indentical:
+Indentical is trivial since it represents only I/O times. As expected, MapReduce is two times slower than brute-force since it has to write to log first. And MapStore is about 1.25 times slower than pure MapReduce.
 
 | Dataset size | Brute-force(sec) | MapReduce(sec) | MapStore(sec) |
 | ------------ | ---------------- | -------------- | ------------- |

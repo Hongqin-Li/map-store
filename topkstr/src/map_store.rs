@@ -27,7 +27,9 @@ impl Operator<i32> for Increment1 {
     }
 }
 
+/// MapStore method based on MapReduce with `M = nmaps`.
 pub struct MapStore {
+    /// Number of splits on keys.
     pub nmaps: u32,
 }
 

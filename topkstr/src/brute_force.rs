@@ -8,6 +8,7 @@ use std::{collections::BinaryHeap, fs::File};
 
 use super::Solution;
 
+/// Brute-force method by hash table and heap.
 pub struct BruteForce {}
 
 impl Solution for BruteForce {

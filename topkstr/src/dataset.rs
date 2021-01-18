@@ -32,9 +32,13 @@ fn rand_u8() -> Vec<u8> {
     s
 }
 
+/// Dataset generator.
 pub enum Generator {
+    /// All strings are different.
     Distinct,
+    /// Distribution of strings follows [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution)
     Normal,
+    /// All strings are same.
     Identical,
 }
 

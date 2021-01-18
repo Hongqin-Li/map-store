@@ -17,7 +17,9 @@ use map_store::BatchWriter;
 use crate::mink_set::MinkSet;
 use crate::Solution;
 
+/// MapReduce method with `M = nmaps`.
 pub struct MapReduce {
+    /// Number of splits on keys.
     pub nmaps: u32,
 }
 
